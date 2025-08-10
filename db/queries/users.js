@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import db from "#db/client";
 
 export async function createUser(username, password) {
@@ -14,7 +15,7 @@ export async function createUser(username, password) {
   return user;
 }
 
-export async function userByEmailAndPassword(email, password) {
+export async function getUserByEmailAndPassword(email, password) {
   const sql = `
 select * from users where email = $1`;
   const {
