@@ -15,12 +15,12 @@ export async function createUser(username, password) {
   return user;
 }
 
-export async function getUserByEmailAndPassword(email, password) {
+export async function getUserByUsernameAndPassword(username, password) {
   const sql = `
-select * from users where email = $1`;
+select * from users where username = $1`;
   const {
     rows: [user],
-  } = await db.query(sql, [email]);
+  } = await db.query(sql, [username]);
   if (!user) return null;
 
   const isValid = await bcrypt.compare(password, user.password);

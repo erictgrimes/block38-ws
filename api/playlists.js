@@ -10,20 +10,23 @@ import {
 import { createPlaylistTrack } from "#db/queries/playlists_tracks";
 import { getTracksByPlaylistId } from "#db/queries/tracks";
 
+import requireUser from "#middleware/requireUser";
+
+router.use(requireUser);
+
 router
   .route("/")
   .get(async (req, res) => {
-    const playlists = await getPlaylists();
+    const playlists = await getPlaylists(req.user.id);
     res.send(playlists);
   })
   .post(async (req, res) => {
     if (!req.body) return res.status(400).send("Request body is required.");
 
     const { name, description } = req.body;
-    if (!name || !description)
-      return res.status(400).send("Request body requires: name, description");
+    if (!name || !description || !req.user.id) return res.status(400).send("Request body requires: name, description, userId");
 
-    const playlist = await createPlaylist(name, description);
+    const playlist = await createPlaylist(name, description, req.user.id);
     res.status(201).send(playlist);
   });
 
@@ -36,12 +39,18 @@ router.param("id", async (req, res, next, id) => {
 });
 
 router.route("/:id").get((req, res) => {
+  if (req.user.id !== req.playlist.user_id) {
+      return res.status(403).send("You do not have permission to view this playlist");
+    }
   res.send(req.playlist);
 });
 
 router
   .route("/:id/tracks")
   .get(async (req, res) => {
+    if (req.user.id !== req.playlist.user_id) {
+      return res.status(403).send("You do not have permission to view this track");
+    }
     const tracks = await getTracksByPlaylistId(req.playlist.id);
     res.send(tracks);
   })
@@ -50,6 +59,10 @@ router
 
     const { trackId } = req.body;
     if (!trackId) return res.status(400).send("Request body requires: trackId");
+
+    if (req.user.id !== req.playlist.user_id) {
+      return res.status(403).send("You do not have permission to view this track");
+    }
 
     const playlistTrack = await createPlaylistTrack(req.playlist.id, trackId);
     res.status(201).send(playlistTrack);
